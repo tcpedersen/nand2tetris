@@ -10,3 +10,42 @@
 // R0 >= 0, R1 >= 0, and R0*R1 < 32768.
 
 // Put your code here.
+
+    // Initiate counter.
+    @counter
+    M = 0
+
+    // Initiate running sum (i.e. final product).
+    @R2
+    M = 0
+
+(LOOP)
+    // Increment counter.
+    @counter
+    M = M + 1
+
+    // Determine if loop should be terminated.
+    @counter
+    D = M
+
+    @R0
+    D = M - D
+
+    @END
+    D;JLT
+
+    // Compute next iteration of product.
+    @R1
+    D = M
+
+    @R2
+    M = M + D
+    
+    // Perform next iteration of loop.
+    @LOOP
+    0;JMP
+
+(END)
+    @END
+    0;JMP
+
