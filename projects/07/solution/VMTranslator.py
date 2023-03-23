@@ -20,6 +20,7 @@ if __name__ == "__main__":
 
             while parser.hasMoreCommands():
                 parser.advance() 
+                print(parser.currentCommand)
 
                 if parser.commandType() == CommandType.C_ARITHMETIC:
                     codewriter.writeArithmetic(parser.arg1())

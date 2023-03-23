@@ -158,7 +158,7 @@ class CodeWriter:
     def _pushGeneric(self, segment, index):
         segmentPointer = self._getSegmentPointer(segment)
         self._write(f"@{segmentPointer}")
-        self._write("D=A")
+        self._write("D=M")
         self._write(f"@{index}")
         self._write("A=D+A")
         self._write("D=M")
@@ -168,10 +168,9 @@ class CodeWriter:
     def _popGeneric(self, segment, index):
         segmentPointer = self._getSegmentPointer(segment)
         self._write(f"@{segmentPointer}")
-        self._write("D=A")
-        self._write(f"@{index}")
-        self._write("A=D+A")
         self._write("D=M")
+        self._write(f"@{index}")
+        self._write("D=D+A")
 
         self._popFromStackToAddressInDRegister()
 
@@ -180,6 +179,29 @@ class CodeWriter:
             return self._pushGeneric(segment, index)
         if command == 'pop':
             return self._popGeneric(segment, index)
+
+    def _pushTemp(self, index):
+        self._write(f"@5")
+        self._write("D=A")
+        self._write(f"@{index}")
+        self._write("A=D+A")
+        self._write("D=M")
+
+        self._pushFromDRegisterToStack()
+
+    def _popTemp(self, index):
+        self._write(f"@5")
+        self._write("D=A")
+        self._write(f"@{index}")
+        self._write("D=D+A")
+
+        self._popFromStackToAddressInDRegister()
+
+    def _pushPopTemp(self, command, index):
+        if command == 'push':
+            return self._pushTemp(index)
+        if command == 'pop':
+            return self._popTemp(index)
 
     def _pushConstant(self, index):
         self._write(f"@{index}")
@@ -225,10 +247,12 @@ class CodeWriter:
     def writePushPop(self, command, segment, index):
         self._write(rf'// {command} {segment} {index}')
 
-        if segment in ['local', 'argument', 'this', 'that', 'temp']:
+        if segment in ['local', 'argument', 'this', 'that']:
             return self._pushPopGeneric(command, segment, index)
         if segment == 'constant':
             return self._pushConstant(index)
+        if segment == 'temp':
+            return self._pushPopTemp(command, index)
         if segment == 'pointer':
             return self._pushPopPointer(command, index)
         if segment == 'static':
