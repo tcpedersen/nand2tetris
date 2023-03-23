@@ -155,6 +155,7 @@ class CodeWriter:
     def _getSegmentPointer(self, segment):
         return SEGMENT_POINTERS[segment]
 
+    # === Generic ===
     def _pushGeneric(self, segment, index):
         segmentPointer = self._getSegmentPointer(segment)
         self._write(f"@{segmentPointer}")
@@ -180,6 +181,7 @@ class CodeWriter:
         if command == 'pop':
             return self._popGeneric(segment, index)
 
+    # === Temp ===
     def _pushTemp(self, index):
         self._write(f"@5")
         self._write("D=A")
@@ -203,11 +205,13 @@ class CodeWriter:
         if command == 'pop':
             return self._popTemp(index)
 
+    # === Constant ===
     def _pushConstant(self, index):
         self._write(f"@{index}")
         self._write(f"D=A")
         self._pushFromDRegisterToStack()
 
+    # === Pointer ===
     def _pushPointer(self, index):
         segmentPointer = self._getSegmentPointer('that' if index else 'this')
         self._write(f"@{segmentPointer}")
@@ -226,6 +230,7 @@ class CodeWriter:
         if command == 'pop':
             return self._popPointer(index)
 
+    # === Static ===
     def _pushStatic(self, index):
         varName = f"{self.fileName}.{index}"
         self._write(f"@{varName}")
