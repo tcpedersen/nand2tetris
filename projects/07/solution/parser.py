@@ -73,6 +73,6 @@ class Parser:
             CommandType.C_FUNCTION,
             CommandType.C_CALL,
         ]:
-            return self._rawArg2()
+            return int(self._rawArg2())
         raise ValueError("invalid command type.")
 

@@ -221,7 +221,7 @@ class CodeWriter:
     def _popPointer(self, index):
         segmentPointer = self._getSegmentPointer('that' if index else 'this')
         self._write(f"@{segmentPointer}")
-        self._write(f"D=M")
+        self._write(f"D=A")
         self._popFromStackToAddressInDRegister()
 
     def _pushPopPointer(self, command, index):
