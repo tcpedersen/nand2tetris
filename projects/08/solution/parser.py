@@ -57,6 +57,20 @@ class Parser:
             return CommandType.C_PUSH
         if cmd == "pop":
             return CommandType.C_POP
+        
+        # Program flow commands.
+        if cmd == "label":
+            return CommandType.C_LABEL
+        if cmd == "goto":
+            return CommandType.C_GOTO
+        if cmd == "if-goto":
+            return CommandType.C_IF
+        if cmd == "call":
+            return CommandType.C_CALL
+        if cmd == "function":
+            return CommandType.C_FUNCTION
+        if cmd == "return":
+            return CommandType.C_RETURN
 
     def arg1(self):
         if self.commandType() == CommandType.C_RETURN:
