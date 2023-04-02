@@ -16,9 +16,7 @@ class CodeWriterGenericOperations:
         self.write("D=M")
 
     def pushFromDRegisterToStack(self):
-        self.write(f"@SP")
-        self.write(f"A=M")
-        self.write(f"M=D")
+        self.pushFromDRegisterToAddress("SP")
         self.incrementStackPointer()
 
     def incrementStackPointer(self):
@@ -34,8 +32,17 @@ class CodeWriterGenericOperations:
         self.write("M=D")
 
         self.popFromStackToDRegister()
-        self.write("@pop.addr")
+        self.pushFromDRegisterToAddress("pop.addr")
+
+    # I.e. *ADDR = D
+    def pushFromDRegisterToAddress(self, address):
+        self.write(f"@{address}")
         self.write("A=M")
+        self.write("M=D")
+
+    # I.e. ADDR = D
+    def changeAddressToDRegister(self, address):
+        self.write(f"@{address}")
         self.write("M=D")
 
 class CodeWriter:
@@ -106,6 +113,7 @@ class CodeWriter:
     def writeGoto(self, label):
         self._write(rf'// goto {label}')
         self._write(f"@{label}")
+        self._write("A=M")
         self._write("0;JMP")
 
     def writeIf(self, label):
@@ -116,6 +124,7 @@ class CodeWriter:
 
     def writeCall(self, functionName, numArgs):
         self._write(rf'// call {functionName} {numArgs}')
+
         returnAddr = self._getFunctionReturnLabel(functionName)
         self._write(f"@{returnAddr}")
         self._write("D=A")
@@ -146,28 +155,32 @@ class CodeWriter:
         self._write(f"(returnAddr)")
 
     def writeReturn(self):
-        def repositionLabelFromFrameOffset(label, offset):
+        self._write(rf'// return')
+
+        def repositionLabelFromFrameOffset(address, offset):
             self._write(f"@{offset}")
             self._write("D=A")
             self._write("@FRAME")
-            self._write("A=A-D")
+            self._write("A=M-D")
             self._write("D=M")
-            self._write(f"@{label}")
-            self._write("M=D")
+            self._genericops.changeAddressToDRegister(address)
 
         # FRAME = LOCAL
         self._write("@LCL")
         self._write("D=M")
-        self._write("@FRAME")
-        self._write("M=D")
+        self._genericops.changeAddressToDRegister("FRAME")
 
-        # RET = *(FRAME - 1)
-        repositionLabelFromFrameOffest("RET", 5)
+        # RET = *(FRAME - 5)
+        repositionLabelFromFrameOffset("RET", 5)
 
-        # Reposition stack pointer.
+        # *ARG = pop()
         self._genericops.popFromStackToDRegister()
-        self._write("@SP")
-        self._write("M=D")
+        self._genericops.pushFromDRegisterToAddress("ARG")
+        
+        # SP = ARG+1
+        self._write("@ARG")
+        self._write("D=M+1")
+        self._genericops.changeAddressToDRegister("SP")
 
         repositionLabelFromFrameOffset("THAT", 1)
         repositionLabelFromFrameOffset("THIS", 2)
@@ -177,7 +190,9 @@ class CodeWriter:
         self.writeGoto("RET")
 
     def writeFunction(self, functionName, numLocals):
-        self._write(f"(self._getFunctionEntryLabel())")
+        self._write(rf'// function {functionName} {numLocals}')
+
+        self._write(f"({self._getFunctionEntryLabel(functionName)})")
         for k in range(numLocals):
             self.writePushPop("push", "constant", 0)
 

@@ -20,11 +20,6 @@ if __name__ == "__main__":
 
             while parser.hasMoreCommands():
                 parser.advance() 
-                try:
-                    print(f"{parser._rawCommandType()} {parser.arg1()} {parser.arg2()}")
-                except Exception as error:
-                    print(f"{parser._rawCommandType()} {parser.arg1()}")
-
                 if parser.commandType() == CommandType.C_ARITHMETIC:
                     codewriter.writeArithmetic(parser.arg1())
 
