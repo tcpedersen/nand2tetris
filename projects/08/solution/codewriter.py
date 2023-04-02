@@ -1,8 +1,15 @@
+import random
+
 SEGMENT_POINTERS = {
     'local': 'LCL',
     'argument': 'ARG',
     'this': 'THIS',
     'that': 'THAT',
+}
+
+BOOLEANS = {
+    'true': -1,
+    'false': 0,
 }
 
 class CodeWriterGenericOperations:
@@ -45,16 +52,21 @@ class CodeWriterGenericOperations:
         self.write(f"@{address}")
         self.write("M=D")
 
+
 class CodeWriter:
     def __init__(self, stream):
         self.stream = stream
         self._labelCounter = 0
         self.fileName = None
         self._genericops = CodeWriterGenericOperations(self._write)
+        self._currentFunction = None
+        self._indent = 0
 
     # ===== Public methods =============================================================
     def setFileName(self, fileName):
         self.fileName = fileName
+        self._write(f"// === {fileName} =====")
+        self._indent = 1
 
     def writeArithmetic(self, command):
         self._write(rf'// {command}')
@@ -97,35 +109,46 @@ class CodeWriter:
             return self._pushPopStatic(command, index)
 
     def writeInit(self):
+        self._write("// Bootstrap code")
+        self._currentFunction = "bootstrap"
+        self._indent = 1
+
         # Initialise stack pointer.
         self._write("@256")
         self._write("D=A")
-        self._write("@SP")
-        self._write("M=D")
+        self._genericops.changeAddressToDRegister("SP")
 
         # Call Sys.init.
-        self._write("call Sys.init")
+        self.writeCall("Sys.init", 0)
+
+        self._currentFunction = None
+        self._indent = 0
 
     def writeLabel(self, label):
         self._write(rf'// label {label}')
-        self._write(f"({label})")
+
+        funcLabel = self._getFunctionLabel(label)
+        self._write(f"({funcLabel})")
 
     def writeGoto(self, label):
         self._write(rf'// goto {label}')
-        self._write(f"@{label}")
-        self._write("A=M")
+
+        funcLabel = self._getFunctionLabel(label)
+        self._write(f"@{funcLabel}")
         self._write("0;JMP")
 
     def writeIf(self, label):
         self._write(rf'// if-goto {label}')
+
+        funcLabel = self._getFunctionLabel(label)
         self._genericops.popFromStackToDRegister()
-        self._write(f"@{label}")
+        self._write(f"@{funcLabel}")
         self._write("D;JNE")
 
     def writeCall(self, functionName, numArgs):
         self._write(rf'// call {functionName} {numArgs}')
 
-        returnAddr = self._getFunctionReturnLabel(functionName)
+        returnAddr = self._getFunctionReturnLabel()
         self._write(f"@{returnAddr}")
         self._write("D=A")
         self._genericops.pushFromDRegisterToStack()
@@ -140,19 +163,20 @@ class CodeWriter:
         adj = numArgs + 5
         self._write("@SP")
         self._write("D=M")
-        self._write(f"@{numArgs}")
+        self._write(f"@{adj}")
         self._write("D=D-A")
-        self._write("@ARG")
-        self._write("M=D")
+        self._genericops.changeAddressToDRegister("ARG")
 
         # Reposition LCL.
         self._write("@SP")
         self._write("D=M")
-        self._write("@LCL")
-        self._write("M=D")
+        self._genericops.changeAddressToDRegister("LCL")
 
-        self.writeGoto(self._getFunctionEntryLabel(functionName))
-        self._write(f"(returnAddr)")
+        # goto f
+        self._write(f"@{functionName}")
+        self._write("0;JMP")
+
+        self._write(f"({returnAddr})")
 
     def writeReturn(self):
         self._write(rf'// return')
@@ -187,18 +211,23 @@ class CodeWriter:
         repositionLabelFromFrameOffset("ARG", 3)
         repositionLabelFromFrameOffset("LCL", 4)
 
-        self.writeGoto("RET")
+        # goto RET
+        self._write(f"@RET")
+        self._write("A=M")
+        self._write("0;JMP")
 
     def writeFunction(self, functionName, numLocals):
         self._write(rf'// function {functionName} {numLocals}')
+        self._currentFunction = functionName
 
-        self._write(f"({self._getFunctionEntryLabel(functionName)})")
+        self._write(f"({functionName})")
         for k in range(numLocals):
             self.writePushPop("push", "constant", 0)
 
     # === Private methods ==============================================================
     def _write(self, line):
-        self.stream.write(line + '\n')
+        indent = "    " * self._indent
+        self.stream.write(indent + line + '\n')
 
     def _add(self):
         self._genericops.popFromStackToDRegister()
@@ -206,7 +235,7 @@ class CodeWriter:
         # Replace stack element with sum.
         self._write("@SP")
         self._write("A=M-1")
-        self._write("M=D+M")
+        self._write("M=M+D")
 
     def _sub(self):
         self._genericops.popFromStackToDRegister()
@@ -223,29 +252,30 @@ class CodeWriter:
 
     def _comparisonTemplate(self, jumpCommand):
         self._genericops.popFromStackToDRegister()
+        uniqueId = self._labelCounter
 
         self._write("@SP")
         self._write("A=M-1")
         self._write("D=M-D")
 
-        self._write(f"@IS_TRUE.{self._labelCounter}")
+        self._write(f"@IS_TRUE.{uniqueId}")
         self._write(f"D;{jumpCommand}")
 
-        # NOT EQUAL
+        # IS_FALSE
         self._write("@SP")
         self._write("A=M-1")
-        self._write("M=0")
+        self._write(f"M={BOOLEANS['false']}")
 
-        self._write(f"@END_OF_CMD.{self._labelCounter}")
+        self._write(f"@END_OF_CMD.{uniqueId}")
         self._write("0;JMP")
 
-        # EQUAL
-        self._write(f"(IS_TRUE.{self._labelCounter})")
+        # IS_TRUE
+        self._write(f"(IS_TRUE.{uniqueId})")
         self._write("@SP")
         self._write("A=M-1")
-        self._write("M=-1")
+        self._write(f"M={BOOLEANS['true']}")
 
-        self._write(f"(END_OF_CMD.{self._labelCounter})")
+        self._write(f"(END_OF_CMD.{uniqueId})")
 
         self._labelCounter += 1
 
@@ -376,9 +406,10 @@ class CodeWriter:
         if command == 'pop':
             return self._popStatic(index)
 
-    def _getFunctionEntryLabel(self, functionName):
-        return functionName
+    def _getFunctionReturnLabel(self):
+        uniqueId = ''.join(random.choice('0123456789ABCDEF') for n in range(8))
+        return f"{self._currentFunction}.return-address.{uniqueId}"
 
-    def _getFunctionReturnLabel(self, functionName):
-        return f"{functionName}.return-address"
+    def _getFunctionLabel(self, label):
+        return f"{self._currentFunction}${label}"
 
