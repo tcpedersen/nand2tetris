@@ -33,11 +33,10 @@ class CodeWriterGenericOperations:
         self.write("@pop.addr")
         self.write("M=D")
 
-        self.genericops.ToDRegister()
+        self.popFromStackToDRegister()
         self.write("@pop.addr")
         self.write("A=M")
         self.write("M=D")
-
 
 class CodeWriter:
     def __init__(self, stream):
@@ -101,18 +100,22 @@ class CodeWriter:
         self._write("call Sys.init")
 
     def writeLabel(self, label):
-        self._write(f"(label)")
+        self._write(rf'// label {label}')
+        self._write(f"({label})")
 
     def writeGoto(self, label):
+        self._write(rf'// goto {label}')
         self._write(f"@{label}")
-        self._write("0:JMP")
+        self._write("0;JMP")
 
     def writeIf(self, label):
+        self._write(rf'// if-goto {label}')
         self._genericops.popFromStackToDRegister()
         self._write(f"@{label}")
         self._write("D;JNE")
 
     def writeCall(self, functionName, numArgs):
+        self._write(rf'// call {functionName} {numArgs}')
         returnAddr = self._getFunctionReturnLabel(functionName)
         self._write(f"@{returnAddr}")
         self._write("D=A")
