@@ -1,9 +1,4 @@
-class TokenType:
-    KEYWORD = 0
-    SYMBOL = 1
-    IDENTIFIER = 2
-    INT_CONST = 3
-    STRING_CONST = 4
+import re
 
 class LexicalElement:
     def __init__(self, element):
@@ -19,7 +14,7 @@ class LexicalElement:
     def xmlLabel(self):
         return type(self).__name__[0].lower() + type(self).__name__[1:]
 
-class KeyWord(LexicalElement):
+class Keyword(LexicalElement):
     def isvalid(element):
         allowed = [
             "class",
@@ -68,18 +63,18 @@ class Symbol(LexicalElement):
            "<",
            ">",
            "=",
-           "_",
+           "~",
         ]
 
         return element in allowed
 
     def xmlTag(self):
         if self.element == "<":
-            return "&lt"
+            return "&lt;"
         if self.element == ">":
-            return "&gt"
+            return "&gt;"
         if self.element == "&":
-            return "&amp"
+            return "&amp;"
         return super().xmlTag()
 
 class IntegerConstant(LexicalElement):
@@ -91,7 +86,11 @@ class IntegerConstant(LexicalElement):
 
 class StringConstant(LexicalElement):
     def isvalid(element):
-        return True
+        return re.match(r"\".+\"", element) is not None
+
+    def xmlTag(self):
+        match = re.match(r"\"(.+)\"", self.element)
+        return match.group(1)
 
 class Identifier(LexicalElement):
     def isvalid(element):

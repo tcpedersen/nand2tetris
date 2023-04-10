@@ -43,6 +43,7 @@ if __name__ == "__main__":
     paths = getIOPaths(sys.argv[1])
 
     for inputfile, outputfile in paths:
+        print(f"Handling {inputfile}.")
         with open(inputfile, "r") as inputstream:
             with open(outputfile, "w") as outputstream:
                 outputstream.write("<tokens>\n")
