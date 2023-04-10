@@ -1,3 +1,7 @@
 *.dat
 *.out
 *.swp
+__pycache__
+projects/07/**/*.asm
+projects/08/**/*.asm
+
