@@ -1,6 +1,5 @@
 import re
-
-from LexicalElement import Symbol
+import LexicalElement
 
 class JackLine:
     def __init__(self, line=str()):
@@ -59,19 +58,19 @@ class JackTokenizer:
         self._token = self._getNextToken()
 
     def _getNextToken(self):
+        # Pop until next token is not whitespace. We can ignore trailing
+        # whitespace as JackLine guarantees no such thing.
         token = self._currentline.pop()
-
-        # Pop until next token is not whitespace.
         while token == " ":
             token = self._currentline.pop()
 
         # If token is symbol, then we are done.
-        if Symbol.isvalid(token):
+        if LexicalElement.Symbol.isvalid(token):
             return token
 
         # Keep adding to buffer until we hit a whitespace, symbol, or EOL.
         peek = self._currentline.peek()
-        while not Symbol.isvalid(peek) and peek != " ":
+        while not LexicalElement.Symbol.isvalid(peek) and peek != " ":
             token += self._currentline.pop()
             if self._currentline.isEmpty():
                 break
@@ -80,20 +79,37 @@ class JackTokenizer:
         return token
 
     def tokenType(self):
-        return TokenType("KEYWORD")
+        if LexicalElement.KeyWord.isvalid(self._token):
+            return LexicalElement.KeyWord(self._token)
+        if LexicalElement.Symbol.isvalid(self._token):
+            return LexicalElement.Symbol(self._token)
+        if LexicalElement.IntegerConstant.isvalid(self._token):
+            return LexicalElement.IntegerConstant(self._token)
+        if LexicalElement.StringConstant.isvalid(self._token):
+            return LexicalElement.StringConstant(self._token)
+        if LexicalElement.Identifier.isvalid(self._token):
+            return LexicalElement.Identifier(self._token)
+
+        raise ValueError("token {self._token} is invalid.")
+
+    def xmlTag(self):
+        return self.tokenType().xmlTag()
+
+    def xmlLabel(self):
+        return self.tokenType().xmlLabel()
 
     def keyWord(self):
-        return KeyWord("CLASS")
+        return LexicalElement.KeyWord(self._token).element
 
     def symbol(self):
-        return str()
+        return LexicalElement.Symbol(self._token).element
 
     def identifier(self):
-        return str()
+        return LexicalElemenet.Identifier(self._token).element
 
     def intVal(self):
-        return int()
+        return int(LexicalElement.IntegerConstant(self._token).element)
 
     def stringVal(self):
-        return str()
+        return LexicalElemenet.StringConstant(self._token).element
 

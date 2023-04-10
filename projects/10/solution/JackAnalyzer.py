@@ -15,7 +15,8 @@ def handleFile(inputfile):
         raise ValueError("invalid filetype of input file.")
 
     # Create path for output file.
-    outputfile = inputfile.replace(".jack", ".xml")
+    dirname, filename = os.path.split(inputfile)
+    outputfile = os.path.join(dirname, "bin", filename.replace(".jack", "T.xml"))
 
     return [(inputfile, outputfile)]
 
@@ -42,16 +43,17 @@ if __name__ == "__main__":
     paths = getIOPaths(sys.argv[1])
 
     for inputfile, outputfile in paths:
-        print(f"Tokenizing file {inputfile}.")
-        with open(inputfile, 'r') as inputstream:
-            tokenizer = JackTokenizer(inputstream)
+        with open(inputfile, "r") as inputstream:
+            with open(outputfile, "w") as outputstream:
+                outputstream.write("<tokens>\n")
 
-            while tokenizer.hasMoreTokens():
-                tokenizer.advance()
-                print(tokenizer._token)
+                tokenizer = JackTokenizer(inputstream)
+                while tokenizer.hasMoreTokens():
+                    tokenizer.advance()
 
+                    outputstream.write(f"    <{tokenizer.xmlLabel()}>")
+                    outputstream.write(f" {tokenizer.xmlTag()} ")
+                    outputstream.write(f"</{tokenizer.xmlLabel()}>\n")
 
-
-
-
+                outputstream.write("</tokens>\n")
 

@@ -7,13 +7,17 @@ class TokenType:
 
 class LexicalElement:
     def __init__(self, element):
-        if not self.isvalid(element):
-            raise ValueError(f"element {element} is not a valid element.")
         self.element = element
 
     @staticmethod
     def isvalid(element):
         raise NotImplementedError("children must overwrite this method.")
+
+    def xmlTag(self):
+        return self.element
+
+    def xmlLabel(self):
+        return type(self).__name__[0].lower() + type(self).__name__[1:]
 
 class KeyWord(LexicalElement):
     def isvalid(element):
@@ -68,6 +72,15 @@ class Symbol(LexicalElement):
         ]
 
         return element in allowed
+
+    def xmlTag(self):
+        if self.element == "<":
+            return "&lt"
+        if self.element == ">":
+            return "&gt"
+        if self.element == "&":
+            return "&amp"
+        return super().xmlTag()
 
 class IntegerConstant(LexicalElement):
     def isvalid(element):
