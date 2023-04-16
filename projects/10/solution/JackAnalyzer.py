@@ -5,9 +5,11 @@ import pathlib
 
 from JackTokenizer import JackTokenizer
 
+
 class JackAnalyzer:
     def __init__(self, inputStream):
         self.inputStream = inputStream
+
 
 def handleFile(inputfile):
     # Assert that filepath points to a jack file.
@@ -16,9 +18,10 @@ def handleFile(inputfile):
 
     # Create path for output file.
     dirname, filename = os.path.split(inputfile)
-    outputfile = os.path.join(dirname, "bin", filename.replace(".jack", "T.xml"))
+    outputfile = os.path.join(dirname, "bin", filename.replace(".jack", ".xml"))
 
     return [(inputfile, outputfile)]
+
 
 def handleDirectory(folderpath):
     ret = []
@@ -26,6 +29,7 @@ def handleDirectory(folderpath):
         ret.extend(handleFile(path))
 
     return ret
+
 
 def getIOPaths(path):
     if os.path.isfile(path):
@@ -35,9 +39,10 @@ def getIOPaths(path):
 
     return paths
 
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        raise ValueError('invalid number of arguments provided.')
+        raise ValueError("invalid number of arguments provided.")
 
     # Create input and output files.
     paths = getIOPaths(sys.argv[1])
@@ -48,14 +53,4 @@ if __name__ == "__main__":
             with open(outputfile, "w") as outputstream:
                 tokenizer = JackTokenizer(inputstream)
                 engine = CompilationEngine(tokenizer, outputstream)
-
-
-                while tokenizer.hasMoreTokens():
-                    tokenizer.advance()
-
-                    outputstream.write(f"    <{tokenizer.xmlLabel()}>")
-                    outputstream.write(f" {tokenizer.xmlTag()} ")
-                    outputstream.write(f"</{tokenizer.xmlLabel()}>\n")
-
-                outputstream.write("</tokens>\n")
-
+                engine.compileClass()

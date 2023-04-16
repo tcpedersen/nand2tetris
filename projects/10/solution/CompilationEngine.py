@@ -3,6 +3,7 @@ import sys
 
 import LexicalElement as le
 
+
 class CompilationWriter:
     def __init__(self, outputStream):
         self.stream = outputStream
@@ -14,7 +15,9 @@ class CompilationWriter:
 
     def writeTerminal(self, element):
         assert isinstance(element, le.LexicalElement)
-        self.write(f"<{element.xmlLabel()}> {element.xmlTag()} </{elemenet.xmlLabel()}>")
+        self.write(
+            f"<{element.xmlLabel()}> {element.xmlTag()} </{elemenet.xmlLabel()}>"
+        )
 
     def writeNonTerminalStart(self, token):
         self.write(f"<{token}>")
@@ -26,7 +29,7 @@ class CompilationWriter:
 
 
 # Rules:
-#   1) a compilexxx (except compileClass) statement assumes advance has been called 
+#   1) a compilexxx (except compileClass) statement assumes advance has been called
 #      prior to call.
 #   2) a compilexxx call will advance to the next token prior to return.
 class CompilationEngine:
@@ -93,7 +96,11 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, ";")
 
     def compileSubroutine(self):
-        assert self.tokenizer.tokenType().element in {"constructor", "function", "method"]
+        assert self.tokenizer.tokenType().element in {
+            "constructor",
+            "function",
+            "method",
+        }
         self.writeTerminal(le.KeyWord)
 
         # Write type.
@@ -115,7 +122,13 @@ class CompilationEngine:
         # Write subroutine body.
         self.tokenizer.advance()
         while True:
-            if self.tokenizer.tokenType().element in {"let", "if", "while", "do", "return"}
+            if self.tokenizer.tokenType().element in {
+                "let",
+                "if",
+                "while",
+                "do",
+                "return",
+            }:
                 statements = True
                 break
 
@@ -129,14 +142,15 @@ class CompilationEngine:
             self.compileStatements()
 
         self.writeTerminal(le.Symbol, "}")
-    
+
     def compileParameterList(self):
         first = True
         while True:
-            if (
-                self.tokenizer.tokenType().element not in {"int", "char", "boolean"} or
-                not isinstance(self.tokenizer.tokenType(), le.Identifier)
-                ):
+            if self.tokenizer.tokenType().element not in {
+                "int",
+                "char",
+                "boolean",
+            } or not isinstance(self.tokenizer.tokenType(), le.Identifier):
                 break
 
             if first:
@@ -158,11 +172,11 @@ class CompilationEngine:
 
     def compileVarDec(self):
         self.writeTerminal(le.KeyWord, "var")
-        
+
         # Write type.
         self.tokenizer.advance()
         self.writeTerminal()
-        
+
         # Write varName.
         self.tokenizer.advance()
         self.writeTerminal(le.Identifier)
@@ -309,7 +323,17 @@ class CompilationEngine:
     def compileExpression(self):
         self.compileTerm()
 
-        while self.tokenizer.tokenType().element in {"+", "-", "*", "/", "&", "|", "<", ">", "="}:
+        while self.tokenizer.tokenType().element in {
+            "+",
+            "-",
+            "*",
+            "/",
+            "&",
+            "|",
+            "<",
+            ">",
+            "=",
+        }:
             self.writeTerminal(le.Symbol)
             self.compileTerm()
 
@@ -384,11 +408,11 @@ class CompilationEngine:
 
     def compileExpressionList(self):
         if (
-            isinstance(self.tokenizer.tokenType(), le.IntegerConstant) or
-            isinstance(self.tokenizer.tokenType(), le.StringConstant) or
-            self.tokenizer.tokenType().element in {"true", "false", "null", "this"} or
-            isinstance(self.tokenizer.tokenType(), le.Identifier) or
-            self.tokenizer.tokenType().element in {"(", "-", "~"}
+            isinstance(self.tokenizer.tokenType(), le.IntegerConstant)
+            or isinstance(self.tokenizer.tokenType(), le.StringConstant)
+            or self.tokenizer.tokenType().element in {"true", "false", "null", "this"}
+            or isinstance(self.tokenizer.tokenType(), le.Identifier)
+            or self.tokenizer.tokenType().element in {"(", "-", "~"}
         ):
             self.compileExpression()
             while True:
@@ -405,4 +429,3 @@ class CompilationEngine:
             assert tokenType.element == elemVal
 
         self.writer.writeTerminal(tokenType)
-

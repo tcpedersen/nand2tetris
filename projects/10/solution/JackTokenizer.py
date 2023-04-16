@@ -1,6 +1,7 @@
 import re
 import LexicalElement
 
+
 class JackLine:
     def __init__(self, line=str()):
         self.line = self._cleanLine(line)
@@ -30,6 +31,7 @@ class JackLine:
         line = line.strip()
 
         return line
+
 
 class JackTokenizer:
     def __init__(self, stream):
@@ -72,9 +74,8 @@ class JackTokenizer:
 
         # Keep adding to buffer until we hit a whitespace, symbol, or EOL.
         peek = self._currentline.peek()
-        while (
-            not LexicalElement.Symbol.isvalid(peek) 
-            and not (token[0] != "\"" and peek == " ")
+        while not LexicalElement.Symbol.isvalid(peek) and not (
+            token[0] != '"' and peek == " "
         ):
             token += self._currentline.pop()
             if self._currentline.isEmpty():
@@ -95,7 +96,9 @@ class JackTokenizer:
         if LexicalElement.Identifier.isvalid(self._token):
             return LexicalElement.Identifier(self._token)
 
-        raise ValueError(f"token '{self._token}' found in line {self._currentlineNumber} is invalid.")
+        raise ValueError(
+            f"token '{self._token}' found in line {self._currentlineNumber} is invalid."
+        )
 
     def xmlTag(self):
         return self.tokenType().xmlTag()
@@ -117,4 +120,3 @@ class JackTokenizer:
 
     def stringVal(self):
         return LexicalElemenet.StringConstant(self._token).element
-
