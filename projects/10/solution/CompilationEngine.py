@@ -69,9 +69,12 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, "}")
 
         assert not self.tokenizer.hasMoreTokens()
+
         self.writer.writeNonTerminalEnd("class")
 
     def compileClassVarDec(self):
+        self.writer.writeNonTerminalStart("classVarDec")
+
         assert self.tokenizer.tokenType().element in {"static", "field"}
         self.writeTerminal(le.KeyWord)
 
@@ -94,8 +97,13 @@ class CompilationEngine:
             self.writeTerminal(le.Identifier)
 
         self.writeTerminal(le.Symbol, ";")
+        self.tokenizer.advance()
+
+        self.writer.writeNonTerminalEnd("classVarDec")
 
     def compileSubroutine(self):
+        self.writer.writeNonTerminalStart("subroutineDec")
+
         assert self.tokenizer.tokenType().element in {
             "constructor",
             "function",
@@ -120,6 +128,7 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, ")")
 
         # Write subroutine body.
+        self.writer.writeNonTerminalStart("subroutineBody")
         self.tokenizer.advance()
         while True:
             if self.tokenizer.tokenType().element in {
@@ -142,8 +151,14 @@ class CompilationEngine:
             self.compileStatements()
 
         self.writeTerminal(le.Symbol, "}")
+        self.tokenizer.advance()
+
+        self.writer.writeNonTerminalEnd("subroutineBody")
+        self.writer.writeNonTerminalEnd("subroutineDec")
 
     def compileParameterList(self):
+        self.writer.writeNonTerminalStart("parameterList")
+
         first = True
         while True:
             if self.tokenizer.tokenType().element not in {
@@ -170,7 +185,11 @@ class CompilationEngine:
 
             self.tokenizer.advance()
 
+        self.writer.writeNonTerminalEnd("parameterList")
+
     def compileVarDec(self):
+        self.writer.writeNonTerminalStart("varDec")
+
         self.writeTerminal(le.KeyWord, "var")
 
         # Write type.
@@ -195,7 +214,11 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, ";")
         self.tokenizer.advance()
 
+        self.writer.writeNonTerminalEnd("varDec")
+
     def compileStatements(self):
+        self.writer.writeNonTerminalStart("statements")
+
         while True:
             if self.tokenizer.tokenType().element == "let":
                 self.compileLet()
@@ -210,7 +233,11 @@ class CompilationEngine:
             else:
                 break
 
+        self.writer.writeNonTerminalEnd("statements")
+
     def compileDo(self):
+        self.writer.writeNonTerminalStart("doStatement")
+
         self.writeTerminal(le.KeyWord, "do")
 
         # subroutineName / className / varName
@@ -233,7 +260,11 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, ";")
         self.tokenizer.advance()
 
+        self.writer.writeNonTerminalEnd("doStatement")
+
     def compileLet(self):
+        self.writer.writeNonTerminalStart("letStatement")
+
         self.writeTerminal(le.KeyWord, "let")
 
         # varName
@@ -258,7 +289,11 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, ";")
         self.tokenizer.advance()
 
+        self.writer.writeNonTerminalEnd("letStatement")
+
     def compileWhile(self):
+        self.writer.writeNonTerminalStart("whileStatement")
+
         self.writeTerminal(le.KeyWord, "while")
 
         self.tokenizer.advance()
@@ -278,7 +313,11 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, "}")
         self.tokenizer.advance()
 
+        self.writer.writeNonTerminalEnd("whileStatement")
+
     def compileReturn(self):
+        self.writer.writeNonTerminalStart("returnStatement")
+
         self.writeTerminal(le.KeyWord, "return")
 
         self.tokenizer.advance()
@@ -288,7 +327,11 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, ";")
         self.tokenizer.advance()
 
+        self.writer.writeNonTerminalEnd("returnStatement")
+
     def compileIf(self):
+        self.writer.writeNonTerminalStart("ifStatement")
+
         self.writeTerminal(le.KeyWord, "if")
 
         self.tokenizer.advance()
@@ -320,7 +363,11 @@ class CompilationEngine:
             self.writeTerminal(le.Symbol, "}")
             self.tokenizer.advance()
 
+        self.writer.writeNonTerminalEnd("ifStatement")
+
     def compileExpression(self):
+        self.writer.writeNonTerminalStart("expression")
+
         self.compileTerm()
 
         while self.tokenizer.tokenType().element in {
@@ -337,7 +384,11 @@ class CompilationEngine:
             self.writeTerminal(le.Symbol)
             self.compileTerm()
 
+        self.writer.writeNonTerminalEnd("expression")
+
     def compileTerm(self):
+        self.writer.writeNonTerminalStart("term")
+
         # integerConstant
         if isinstance(self.tokenizer.tokenType(), le.IntegerConstant):
             self.writeTerminal(le.IntegerConstant)
@@ -406,7 +457,11 @@ class CompilationEngine:
             else:
                 pass
 
+        self.writer.writeNonTerminalEnd("term")
+
     def compileExpressionList(self):
+        self.writer.writeNonTerminalStart("expressionList")
+
         if (
             isinstance(self.tokenizer.tokenType(), le.IntegerConstant)
             or isinstance(self.tokenizer.tokenType(), le.StringConstant)
@@ -420,6 +475,8 @@ class CompilationEngine:
                     break
                 self.writeTerminal(le.Symbol, ",")
                 self.compileExpression()
+
+        self.writer.writeNonTerminalEnd("expressionList")
 
     def writeTerminal(self, elemType=None, elemVal=None):
         tokenType = self.tokenizer.tokenType()
