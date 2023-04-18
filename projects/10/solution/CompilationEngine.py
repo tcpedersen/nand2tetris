@@ -11,13 +11,11 @@ class CompilationWriter:
 
     def write(self, string):
         indent = "    " * self.indentlevel
-        self.stream.write(indent + string)
+        self.stream.write(indent + string + "\n")
 
     def writeTerminal(self, element):
         assert isinstance(element, le.LexicalElement)
-        self.write(
-            f"<{element.xmlLabel()}> {element.xmlTag()} </{elemenet.xmlLabel()}>"
-        )
+        self.write(f"<{element.xmlLabel()}> {element.xmlTag()} </{element.xmlLabel()}>")
 
     def writeNonTerminalStart(self, token):
         self.write(f"<{token}>")
@@ -41,7 +39,7 @@ class CompilationEngine:
         self.writer.writeNonTerminalStart("class")
 
         self.tokenizer.advance()
-        self.writeTerminal(le.KeyWord, "class")
+        self.writeTerminal(le.Keyword, "class")
 
         # Write className.
         self.tokenizer.advance()
@@ -54,7 +52,7 @@ class CompilationEngine:
         # Compile body.
         self.tokenizer.advance()
         while True:
-            token = self.tokenizer.getTokenType().element
+            token = self.tokenizer.tokenType().element
 
             if token in {"static", "field"}:
                 self.compileClassVarDec()
@@ -76,7 +74,7 @@ class CompilationEngine:
         self.writer.writeNonTerminalStart("classVarDec")
 
         assert self.tokenizer.tokenType().element in {"static", "field"}
-        self.writeTerminal(le.KeyWord)
+        self.writeTerminal(le.Keyword)
 
         # Write type.
         self.tokenizer.advance()
@@ -109,7 +107,7 @@ class CompilationEngine:
             "function",
             "method",
         }
-        self.writeTerminal(le.KeyWord)
+        self.writeTerminal(le.Keyword)
 
         # Write type.
         self.tokenizer.advance()
@@ -124,11 +122,18 @@ class CompilationEngine:
         self.writeTerminal(le.Symbol, "(")
 
         # Write parameterList.
-        self.compileParamterList()
+        self.tokenizer.advance()
+        self.compileParameterList()
+
         self.writeTerminal(le.Symbol, ")")
 
         # Write subroutine body.
         self.writer.writeNonTerminalStart("subroutineBody")
+
+        # Write "{"
+        self.tokenizer.advance()
+        self.writeTerminal(le.Symbol, "{")
+
         self.tokenizer.advance()
         while True:
             if self.tokenizer.tokenType().element in {
@@ -161,11 +166,16 @@ class CompilationEngine:
 
         first = True
         while True:
-            if self.tokenizer.tokenType().element not in {
-                "int",
-                "char",
-                "boolean",
-            } or not isinstance(self.tokenizer.tokenType(), le.Identifier):
+            if not (
+                self.tokenizer.tokenType().element
+                in {
+                    "int",
+                    "char",
+                    "boolean",
+                }
+                or isinstance(self.tokenizer.tokenType(), le.Identifier)
+                or self.tokenizer.tokenType().element == ","
+            ):
                 break
 
             if first:
@@ -190,7 +200,7 @@ class CompilationEngine:
     def compileVarDec(self):
         self.writer.writeNonTerminalStart("varDec")
 
-        self.writeTerminal(le.KeyWord, "var")
+        self.writeTerminal(le.Keyword, "var")
 
         # Write type.
         self.tokenizer.advance()
@@ -238,15 +248,18 @@ class CompilationEngine:
     def compileDo(self):
         self.writer.writeNonTerminalStart("doStatement")
 
-        self.writeTerminal(le.KeyWord, "do")
+        self.writeTerminal(le.Keyword, "do")
 
         # subroutineName / className / varName
         self.tokenizer.advance()
         self.writeTerminal(le.Identifier)
 
         self.tokenizer.advance()
-        if self.tokenizer.tokenType.elemenet == ".":
+        if self.tokenizer.tokenType().element == ".":
             self.writeTerminal(le.Symbol, ".")
+            self.tokenizer.advance()
+
+            self.writeTerminal(le.Identifier)
             self.tokenizer.advance()
 
         self.writeTerminal(le.Symbol, "(")
@@ -265,7 +278,7 @@ class CompilationEngine:
     def compileLet(self):
         self.writer.writeNonTerminalStart("letStatement")
 
-        self.writeTerminal(le.KeyWord, "let")
+        self.writeTerminal(le.Keyword, "let")
 
         # varName
         self.tokenizer.advance()
@@ -294,7 +307,7 @@ class CompilationEngine:
     def compileWhile(self):
         self.writer.writeNonTerminalStart("whileStatement")
 
-        self.writeTerminal(le.KeyWord, "while")
+        self.writeTerminal(le.Keyword, "while")
 
         self.tokenizer.advance()
         self.writeTerminal(le.Symbol, "(")
@@ -318,7 +331,7 @@ class CompilationEngine:
     def compileReturn(self):
         self.writer.writeNonTerminalStart("returnStatement")
 
-        self.writeTerminal(le.KeyWord, "return")
+        self.writeTerminal(le.Keyword, "return")
 
         self.tokenizer.advance()
         if self.tokenizer.tokenType().element != ";":
@@ -332,7 +345,7 @@ class CompilationEngine:
     def compileIf(self):
         self.writer.writeNonTerminalStart("ifStatement")
 
-        self.writeTerminal(le.KeyWord, "if")
+        self.writeTerminal(le.Keyword, "if")
 
         self.tokenizer.advance()
         self.writeTerminal(le.Symbol, "(")
@@ -352,13 +365,13 @@ class CompilationEngine:
         self.tokenizer.advance()
 
         if self.tokenizer.tokenType().element == "else":
-            self.writeTerminal(le.KeyWord, "else")
+            self.writeTerminal(le.Keyword, "else")
 
             self.tokenizer.advance()
             self.writeTerminal(le.Symbol, "{")
 
             self.tokenizer.advance()
-            self.compileStatement()
+            self.compileStatements()
 
             self.writeTerminal(le.Symbol, "}")
             self.tokenizer.advance()
@@ -382,6 +395,8 @@ class CompilationEngine:
             "=",
         }:
             self.writeTerminal(le.Symbol)
+            self.tokenizer.advance()
+
             self.compileTerm()
 
         self.writer.writeNonTerminalEnd("expression")
@@ -401,13 +416,15 @@ class CompilationEngine:
 
         # keywordConstant
         elif self.tokenizer.tokenType().element in {"true", "false", "null", "this"}:
-            self.writeTerminal(le.KeyWord)
+            self.writeTerminal(le.Keyword)
             self.tokenizer.advance()
 
         # unaryOp
         elif self.tokenizer.tokenType().element in {"-", "~"}:
             self.writeTerminal(le.Symbol)
             self.tokenizer.advance()
+
+            self.compileTerm()
 
         # "(" expression ")"
         elif self.tokenizer.tokenType().element == "(":
@@ -435,13 +452,11 @@ class CompilationEngine:
 
             # subroutineCall
             elif self.tokenizer.tokenType().element in {"(", "."}:
-                # subroutineName / className / varName
-                self.tokenizer.advance()
-                self.writeTerminal(le.Identifier)
-
-                self.tokenizer.advance()
-                if self.tokenizer.tokenType.elemenet == ".":
+                if self.tokenizer.tokenType().element == ".":
                     self.writeTerminal(le.Symbol, ".")
+                    self.tokenizer.advance()
+
+                    self.writeTerminal(le.Identifier)
                     self.tokenizer.advance()
 
                 self.writeTerminal(le.Symbol, "(")
@@ -473,16 +488,24 @@ class CompilationEngine:
             while True:
                 if self.tokenizer.tokenType().element != ",":
                     break
+
                 self.writeTerminal(le.Symbol, ",")
+                self.tokenizer.advance()
+
                 self.compileExpression()
 
         self.writer.writeNonTerminalEnd("expressionList")
 
     def writeTerminal(self, elemType=None, elemVal=None):
         tokenType = self.tokenizer.tokenType()
-        if elemType is not None:
-            assert isinstance(tokenType, expectedType)
         if elemVal is not None:
-            assert tokenType.element == elemVal
+            assert (
+                tokenType.element == elemVal
+            ), f"element is '{tokenType.element}', not '{elemVal}'."
+        if elemType is not None:
+            assert isinstance(tokenType, elemType), (
+                f"tokenType '{tokenType.element}' is '{tokenType.__class__.__name__}', "
+                "not '{elemType.__name__}'."
+            )
 
         self.writer.writeTerminal(tokenType)

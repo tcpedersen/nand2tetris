@@ -4,6 +4,7 @@ import glob
 import pathlib
 
 from JackTokenizer import JackTokenizer
+from CompilationEngine import CompilationEngine
 
 
 class JackAnalyzer:
