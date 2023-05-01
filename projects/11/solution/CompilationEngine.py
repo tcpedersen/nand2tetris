@@ -284,9 +284,7 @@ class CompilationEngine:
         self.tokenizer.advance()
         if self.tokenizer.tokenType().element == "[":
             # Push base address of array onto stack.
-            self.writer.writePush(
-                self.table.kindOf(varName), self.table.indexOf(varName)
-            )
+            self.pushVarToStack(varName)
 
             # Compute offset of array.
             self.assertTerminal(le.Symbol, "[")
@@ -511,7 +509,7 @@ class CompilationEngine:
 
     def _compileTerm_HandleArrayIndexing(self, arrayName):
         # Push base address of array.
-        self.writePush(self.table.kindOf(arrayName), self.table.indexOf(arrayName))
+        self.pushVarToStack(arrayName)
 
         # Evaluate expression.
         self.assertTerminal(le.Symbol, "[")
