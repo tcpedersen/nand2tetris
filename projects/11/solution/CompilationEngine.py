@@ -106,7 +106,7 @@ class CompilationEngine:
         self.tokenizer.advance()
 
     def compileSubroutine(self):
-        self.writer.startSubroutine()
+        self.table.startSubroutine()
 
         self.assertTerminal(le.Keyword)
         funcType = self.tokenElement()
@@ -149,6 +149,12 @@ class CompilationEngine:
 
             self.compileVarDec()
 
+        # Declare begining of function.
+        self.writer.writeFunction(
+            self._className + "." + subroutineName, 
+            self.table.varCount("var")
+        )
+
         # If subroutine is constructor, then allocate memory on the heap.
         if funcType == "constructor":
             self.writer.writePush("constant", self.table.varCount("field"))
@@ -164,16 +170,14 @@ class CompilationEngine:
         if statements:
             self.compileStatements()
 
-        # Return from subroutine.
         self.assertTerminal(le.Symbol, "}")
         self.tokenizer.advance()
-        self.writer.writeReturn()
 
     def compileParameterList(self):
         first = True
         while True:
-            if (
-                not self.tokenElement() in {"int", "char", "boolean"}
+            if not (
+                self.tokenElement() in {"int", "char", "boolean"}
                 or isinstance(self.tokenizer.tokenType(), le.Identifier)
                 or self.tokenElement() == ","
             ):
@@ -257,10 +261,10 @@ class CompilationEngine:
         identifierName = self.tokenElement()
 
         # Handle subroutine call.
+        self.tokenizer.advance()
         self._compileTerm_HandleSubroutineCall(identifierName)
 
         # End.
-        self.tokenizer.advance()
         self.assertTerminal(le.Symbol, ";")
         self.tokenizer.advance()
 
@@ -313,9 +317,7 @@ class CompilationEngine:
             self.writer.writePush("temp", 0)  # Push rhs to stack.
             self.writer.writePop("that", 0)  # Store rhs in 'that'.
         else:
-            self.writer.writePop(
-                self.table.kindOf(varName), self.table.indexOf(varName)
-            )
+            self.popVarFromStack(varName)
 
     def compileWhile(self):
         self.assertTerminal(le.Keyword, "while")
@@ -338,7 +340,7 @@ class CompilationEngine:
         self.assertTerminal(le.Symbol, ")")
 
         # Negate result.
-        self.writer.writeArithmetic("neg")
+        self.writer.writeArithmetic("not")
 
         # Jump to end of while loop.
         self.writer.writeIf(whileEndLabel)
@@ -384,12 +386,12 @@ class CompilationEngine:
         self.assertTerminal(le.Symbol, ")")
 
         # Negate result.
-        self.writer.writeArithmetic("neg")
+        self.writer.writeArithmetic("not")
 
         # Generate two unique labels.
         uniqueLabel = "".join(random.choices(string.ascii_uppercase, k=8))
-        isFalseLabel = "ISFALSE.{uniqueLabel}"
-        isTrueLabel = "ISTRUE.{uniqueLabel}"
+        isFalseLabel = f"IS_FALSE.{uniqueLabel}"
+        isTrueLabel = f"IS_TRUE.{uniqueLabel}"
 
         # If false, skip statements.
         self.writer.writeIf(isFalseLabel)
@@ -432,7 +434,7 @@ class CompilationEngine:
         while self.tokenElement() in {"+", "-", "*", "/", "&", "|", "<", ">", "="}:
             # Get operator.
             self.assertTerminal(le.Symbol)
-            operator = self.tokenizer.tokenElement()
+            operator = self.tokenElement()
 
             self.tokenizer.advance()
             self.compileTerm()
@@ -482,12 +484,12 @@ class CompilationEngine:
 
         # Push variable.
         if self.tokenElement() in {"false", "null"}:
-            self.writer.push("constant", 0)
+            self.writer.writePush("constant", 0)
         elif self.tokenElement() in {"true"}:
-            self.writer.push("constant", 1)
+            self.writer.writePush("constant", 1)
             self.writer.writeArithmetic("neg")
         else:
-            self.writer.push("argument", 0)  # push this
+            self.writer.writePush("pointer", 0)  # push this
 
         self.tokenizer.advance()
 
@@ -496,7 +498,7 @@ class CompilationEngine:
         self.tokenizer.advance()
 
         self.compileTerm()
-        self.writer.writeArithmetic("neg")
+        self.writer.writeArithmetic("not")
 
     def _compileTerm_HandleParenthesisExpression(self):
         self.assertTerminal(le.Symbol, "(")
@@ -540,21 +542,22 @@ class CompilationEngine:
 
             if self.table.kindOf(identifierName) is None:
                 # Is a function / constructor call.
-                continue
+                subroutineName = identifierName + "." + self.tokenElement()
             else:
                 # Is a method call for some other object.
                 self._compileTerm_HandleVariable(identifierName)
                 nArgs += 1
+                varType = self.table.typeOf(identifierName)
+                subroutineName = varType + "." + self.tokenElement()
 
-            subroutineName = identifierName + "." + self.tokenElement()
+            self.tokenizer.advance()
         else:
             # Is a method call for the current object.
-            self.writer.writePush("argument", 0)  # Must contain this.
+            self.writer.writePush("pointer", 0)  # Will contain 'this'. TODO correct?
             subroutineName = self._className + "." + identifierName
             nArgs += 1
 
         # Push explicit arguments onto stack.
-        self.tokenizer.advance()
         self.assertTerminal(le.Symbol, "(")
 
         self.tokenizer.advance()
@@ -568,16 +571,7 @@ class CompilationEngine:
         self.tokenizer.advance()
 
     def _compileTerm_HandleVariable(self, identifierName):
-        varNameKind = self.kindOf(identifierName)
-        varNameIndex = self.indexOf(identifierName)
-        translation = {
-            "static": "static",
-            "field": "this",
-            "arg": "argument",
-            "var": "local",
-        }
-
-        self.writer.writePush(translation[varNameKind], varNameIndex)
+        self.pushVarToStack(identifierName)
 
         # Do not advance, since caller will have advanced one too far.
 
@@ -596,11 +590,11 @@ class CompilationEngine:
 
         # unaryOp
         elif self.tokenElement() in {"-", "~"}:
-            self._compileTerm_HandleKeywordConstant()
+            self._compileTerm_HandleUnaryOp()
 
         # "(" expression ")"
         elif self.tokenElement() == "(":
-            self._compileTerm_HandleParanthesisExpression()
+            self._compileTerm_HandleParenthesisExpression()
 
         else:
             # Get (beginning of) identifier  name.
@@ -656,7 +650,7 @@ class CompilationEngine:
         if elemType is not None:
             assert isinstance(tokenType, elemType), (
                 f"tokenType '{tokenType.element}' is '{tokenType.__class__.__name__}', "
-                "not '{elemType.__name__}'."
+                f"not '{elemType.__name__}'."
             )
 
     def tokenElement(self):
@@ -664,3 +658,25 @@ class CompilationEngine:
 
     def tokenType(self):
         return self.tokenizer.tokenType()
+
+    def pushVarToStack(self, varName):
+        varNameKind = self.table.kindOf(varName)
+        varNameIndex = self.table.indexOf(varName)
+        translation = {
+            "static": "static",
+            "field": "this",
+            "arg": "argument",
+            "var": "local",
+        }
+        self.writer.writePush(translation[varNameKind], varNameIndex)
+
+    def popVarFromStack(self, varName):
+        varNameKind = self.table.kindOf(varName)
+        varNameIndex = self.table.indexOf(varName)
+        translation = {
+            "static": "static",
+            "field": "this",
+            "arg": "argument",
+            "var": "local",
+        }
+        self.writer.writePop(translation[varNameKind], varNameIndex)

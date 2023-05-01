@@ -15,7 +15,7 @@ def handleFile(inputfile):
 
     # Create path for output file.
     dirname, filename = os.path.split(inputfile)
-    outputfile = os.path.join(dirname, "bin", filename.replace(".jack", ".xml"))
+    outputfile = os.path.join(dirname, filename.replace(".jack", ".vm"))
 
     return [(inputfile, outputfile)]
 
@@ -49,6 +49,6 @@ if __name__ == "__main__":
         with open(inputfile, "r") as inputstream:
             with open(outputfile, "w") as outputstream:
                 tokenizer = JackTokenizer(inputstream)
-                writer = VMWriter(outputStream)
+                writer = VMWriter(outputstream)
                 engine = CompilationEngine(tokenizer, writer)
                 engine.compileClass()

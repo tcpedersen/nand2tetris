@@ -1,6 +1,7 @@
 class SymbolTable:
     def __init__(self):
         self.classTable = dict()
+        self.subroutineTable = dict()
 
         self.scope = {
             "static": "class",
@@ -51,6 +52,7 @@ class SymbolTable:
 
     def typeOf(self, name):
         return self._getEntry(name)["type"]
-
+        
     def indexOf(self, name):
         return self._getEntry(name)["index"]
+
