@@ -72,11 +72,18 @@ class JackTokenizer:
         if LexicalElement.Symbol.isvalid(token):
             return token
 
+        insideString = token == '"'
+
         # Keep adding to buffer until we hit a whitespace, symbol, or EOL.
         peek = self._currentline.peek()
-        while not LexicalElement.Symbol.isvalid(peek) and not (
-            token[0] != '"' and peek == " "
-        ):
+        while True:
+            if not insideString:
+                if LexicalElement.Symbol.isvalid(peek) or peek == " ":
+                    break
+            else:
+                if len(token) > 1 and token[-1] == '"':
+                    break
+
             token += self._currentline.pop()
             if self._currentline.isEmpty():
                 break

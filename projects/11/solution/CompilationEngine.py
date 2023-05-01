@@ -151,8 +151,7 @@ class CompilationEngine:
 
         # Declare begining of function.
         self.writer.writeFunction(
-            self._className + "." + subroutineName, 
-            self.table.varCount("var")
+            self._className + "." + subroutineName, self.table.varCount("var")
         )
 
         # If subroutine is constructor, then allocate memory on the heap.

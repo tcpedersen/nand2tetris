@@ -52,7 +52,6 @@ class SymbolTable:
 
     def typeOf(self, name):
         return self._getEntry(name)["type"]
-        
+
     def indexOf(self, name):
         return self._getEntry(name)["index"]
-
