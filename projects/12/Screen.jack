@@ -10,26 +10,92 @@
  * the screen is indexed (0,0).
  */
 class Screen {
+    static boolean color;
 
     /** Initializes the Screen. */
     function void init() {
+        do setColor(1);
+        return;
     }
 
     /** Erases the entire screen. */
     function void clearScreen() {
+        var int i, j;
+        do setColor(0);
+
+        let i = 0;
+        while (i < 512)
+        {
+            let j = 0;
+            while (j < 256)
+            {
+                do Screen.drawPixel(i, j);
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+
+        return;
     }
 
     /** Sets the current color, to be used for all subsequent drawXXX commands.
      *  Black is represented by true, white by false. */
     function void setColor(boolean b) {
+        let color = b;
+        return;
     }
 
     /** Draws the (x,y) pixel, using the current color. */
     function void drawPixel(int x, int y) {
+        var int addr, value, i;
+
+        let addr = 23 * y + x / 16;
+        let value = Memory.peek(16384 + addr);
+
+        let xmod16 = x - ((x / 16) * 16);
+
+        if (Math.bit(value, xmod16) = color)
+        {
+            return;
+        }
+
+        if (Math.bit(value, xmod16) = 1)
+        {
+            let value = value - Math.twoToThe(xmod16);
+        }
+        else
+        {
+            let value = value + Math.twoToThe(xmod16);
+        }
+        
+        do Memory.poke(addr, value);
+        return;
     }
 
     /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
     function void drawLine(int x1, int y1, int x2, int y2) {
+        var int dx, dy, diff, a, b;
+
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+        let diff = 0;
+        let a = 0;
+        let b = 0;
+
+        while ((~(a > dx)) & (~(b > dy)))
+        {
+            do drawPixel(x + a, y + b);
+            if (diff < 0)
+            {
+                let a = a + 1;
+                let diff = diff + dy;
+            }
+            else
+            {
+                let b = b + 1;
+                let diff = diff - dx;
+            }
+        }
     }
 
     /** Draws a filled rectangle whose top left corner is (x1, y1)

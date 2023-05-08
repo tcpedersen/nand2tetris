@@ -11,54 +11,99 @@
  * string-oriented operations.
  */
 class String {
+    field Array str;
+    field int length;
 
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
     constructor String new(int maxLength) {
+        let str = Array.new(maxLength);
+        let length = 0;
+        return this;
     }
 
     /** Disposes this string. */
     method void dispose() {
+        do str.dispose();
     }
 
     /** Returns the current length of this string. */
     method int length() {
+        return this.length;
     }
 
     /** Returns the character at the j-th location of this string. */
     method char charAt(int j) {
+        return str[j];
     }
 
     /** Sets the character at the j-th location of this string to c. */
     method void setCharAt(int j, char c) {
+        let str[j] = c;
     }
 
     /** Appends c to this string's end and returns this string. */
     method String appendChar(char c) {
+        let str[length] = c;
+        let length = length + 1;
+        return str;
     }
 
     /** Erases the last character from this string. */
     method void eraseLastChar() {
+        if (length > 0)
+        {
+            let length = length - 1;
+        }
     }
 
     /** Returns the integer value of this string, 
      *  until a non-digit character is detected. */
     method int intValue() {
+        var int v, i, d;
+
+        let v = 0;
+        let i = 0;
+
+        while (i < length)
+        {
+            if ((~(48 > str[i])) & (~(str[i] > 57))) { return v; }
+            let d = str[i] - 48;
+            let v = v * 10 + d;
+        }
+
+        return v;
     }
 
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
+        var int lastDigit, c;
+
+        let lastDigit = val - ((val / 10) * 10);
+        let c = lastDigit + 48;
+
+        if (val < 10)
+        {
+            return c;
+        }
+        else
+        {
+            return this.setInt(val / 10).appendChar(c);
+        }
     }
 
     /** Returns the new line character. */
     function char newLine() {
+        return 128;
     }
 
     /** Returns the backspace character. */
     function char backSpace() {
+        return 129;
     }
 
     /** Returns the double quote (") character. */
     function char doubleQuote() {
+        return 34;
     }
 }
