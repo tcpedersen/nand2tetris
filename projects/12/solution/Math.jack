@@ -92,7 +92,7 @@ class Math {
 
         if ((w > z) | (w < 0)) { return 0; }
 
-        let q = Math.divide(2, 2 * w);
+        let q = Math.divide(z, 2 * w);
         let s = Math.sign(x) * Math.sign(y);
 
         if ((z - (2 * q * w)) < w)
