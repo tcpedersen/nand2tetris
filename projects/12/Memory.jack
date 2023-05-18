@@ -9,26 +9,84 @@
  * consists of 32,768 words, each holding a 16-bit binary number.
  */ 
 class Memory {
+    static Array ram;
+    static Array heap;
+    static Array freeList;
 
     /** Initializes the class. */
     function void init() {
+        let ram = 0;
+        let heap = 2048;
+
+        // Define freeList.
+        let freeList = 2048;
+        let heap[0] = 0;
+        let heap[1] = 14335;
     }
 
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        ram[address] = value;
     }
+
+
+    # TODO Handle no available block.
+    function int findSegment(int size)
+    {
+        var int segment;
+        let segment = freeList;
+
+        while (true)
+        {
+            if (segment[1] > size + 2)
+            {
+                return segment;
+            }
+
+            let segment = segment[0]; // Advance to next.
+        }
+    }
+
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
+        var int block, segment;
+        let segment = findSegment(size);
+
+        // Get block.
+        let block = segment + segment[1] - size;
+        ram[block - 1] = size;
+
+        // Update freeList.
+        let segment[1] = segment[1] - size - 1;
+
+        return block;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
+        var int segment;
+        let segment = o - 1;
+        let segment[1] = segment[0]; // size
+        let segment[0] = 0; // next
+
+        // Find end of freeList.
+        var int end;
+        let end = freeList;
+
+        while (end[0] > 0)
+        {
+            let end = end[0]; // Advance.
+        }
+
+        // Append to end of freeList.
+        let end[0] = segment;
     }    
 }

@@ -87,23 +87,81 @@ class Screen {
             do drawPixel(x + a, y + b);
             if (diff < 0)
             {
-                let a = a + 1;
-                let diff = diff + dy;
+                if ((dx > 0) & (dy > 0))
+                {
+                    let a = a + 1;
+                    let diff = diff + dy;
+                }
+                if ((dx > 0) & (dy < 0))
+                {
+                    let b = b - 1;
+                    let diff = diff - dx;
+                }
+                if ((dx < 0) & (dy > 0))
+                {
+                    let b = b + 1;
+                    let diff = diff + dx;
+                }
+                if ((dx < 0) & (dy < 0))
+                {
+                    let a = a - 1;
+                    let diff = diff - dy;
+                }
             }
             else
             {
-                let b = b + 1;
-                let diff = diff - dx;
+                if ((dx > 0) & (dy > 0))
+                {
+                    let b = b + 1;
+                    let diff = diff + dx;
+                }
+                if ((dx > 0) & (dy < 0))
+                {
+                    let a = a + 1;
+                    let diff = diff + dy;
+                }
+                if ((dx < 0) & (dy > 0))
+                {
+                    let a = a - 1;
+                    let diff = diff - dy;
+                }
+                if ((dx < 0) & (dy < 0))
+                {
+                    let a = a - 1;
+                    let diff = diff - dy;
+                }
             }
         }
+
+        return;
     }
 
     /** Draws a filled rectangle whose top left corner is (x1, y1)
      * and bottom right corner is (x2,y2), using the current color. */
     function void drawRectangle(int x1, int y1, int x2, int y2) {
+        do drawLine(x1, y1, x2, y1);
+        do drawLine(x2, y1, x2, y2);
+        do drawLine(x1, y2, x2, y2);
+        do drawLine(x1, y1, x1, y2);
     }
 
     /** Draws a filled circle of radius r<=181 around (x,y), using the current color. */
     function void drawCircle(int x, int y, int r) {
+        var int dy;
+        var int x1, x2, x3, x4;
+        var int norm;
+        let dy = -r;
+
+        while (dy < r)
+        {
+            let norm = Math.sqrt(r * r - d * dy);
+            let x1 = x - norm;
+            let y1 = y + dy;
+            let x2 = x + norm;
+            let y2 = y + dy;
+
+            do drawLine(x1, y1, x2, y2);
+        }
     }
 }
+
