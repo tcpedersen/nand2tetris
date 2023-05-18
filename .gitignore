@@ -1,7 +1,12 @@
 *.dat
 *.out
 *.swp
-__pycache__
+*.swo
+
 projects/07/**/*.asm
 projects/08/**/*.asm
+projects/10/**/bin/*
+projects/11/**/*.vm
 
+
+__pycache__
