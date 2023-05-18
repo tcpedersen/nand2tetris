@@ -126,10 +126,11 @@ class Math {
         let j = (16 / 2) - 1;
         let y = 0;
 
-        while (j > 0)
+        while (~(j < 0))
         {
-            let yplus = y + twoToThe[j];
+            let yplus = y + Math.twoToThe(j);
             let yplus_sq = yplus * yplus;
+
             if ((~(yplus_sq > x)) & (yplus_sq > 0))
             {
                 let y = yplus;
