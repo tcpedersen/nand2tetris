@@ -68,7 +68,7 @@ class Math {
 
         while (j < 16)
         {
-            if (Math.bit(y, j) = 1)
+            if (Math.bit(y, j))
             {
                 let sum = sum + shiftedX;
             }
