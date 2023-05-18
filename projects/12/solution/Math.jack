@@ -8,43 +8,50 @@
  * Note: Jack compilers implement multiplication and division using OS method calls.
  */
 class Math {
-    field Array twoToThe;
+    static Array twoToThe;
 
     /** Initializes the library. */
     function void init() {
         let twoToThe = Array.new(16);
-        let twoToThe[0] = 0;
-        let twoToThe[1] = 2;
-        let twoToThe[2] = 4;
-        let twoToThe[3] = 8;
-        let twoToThe[4] = 16;
-        let twoToThe[5] = 32;
-        let twoToThe[6] = 64;
-        let twoToThe[7] = 128;
-        let twoToThe[8] = 256;
-        let twoToThe[9] = 512;
-        let twoToThe[10] = 1024;
-        let twoToThe[11] = 2048;
-        let twoToThe[12] = 4096;
-        let twoToThe[13] = 8192;
-        let twoToThe[14] = 16384;
-        let twoToThe[15] = 32768;
+        let twoToThe[0]       = 1;
+        let twoToThe[1]       = 2;
+        let twoToThe[2]       = 4;
+        let twoToThe[3]       = 8;
+        let twoToThe[4]      = 16;
+        let twoToThe[5]      = 32;
+        let twoToThe[6]      = 64;
+        let twoToThe[7]     = 128;
+        let twoToThe[8]     = 256;
+        let twoToThe[9]     = 512;
+        let twoToThe[10]   = 1024;
+        let twoToThe[11]   = 2048;
+        let twoToThe[12]   = 4096;
+        let twoToThe[13]   = 8192;
+        let twoToThe[14]  = 16384;
+        let twoToThe[15] = -32767 - 1; // Hack for binary value 1000 0000 0000 0000.
 
         return;
     }
 
     /** Returns the absolute value of x. */
     function int abs(int x) {
-        return sign(x) * x;
+        return Math.sign(x) * x;
     }
 
-    function twoToThe(int j)
+    function int twoToThe(int j)
     {
-        return twoToThe[j];
+        if (j < 15)
+        {
+            return twoToThe[j];
+        }
+
+        do Sys.error(1);
+        return 0;
     }
 
+    // Returns true if the jth bit of the integer x is 1 and false otherwise.
     function boolean bit(int x, int j) {
-        return (x & twoToThe[j]) > 0;
+        return ~((x & twoToThe[j]) = 0);
     }
 
     /** Returns the product of x and y. 
@@ -53,21 +60,22 @@ class Math {
      *  the Jack expressions x*y and multiply(x,y) return the same value.
      */
     function int multiply(int x, int y) {
-        var int sum;
-        var int shiftedX;
-        var int j;
+        var int sum, shiftedX, j;
 
         let sum = 0;
+        let shiftedX = x;
         let j = 0;
+
         while (j < 16)
         {
-            if (bit(y, j) = 1)
+            if (Math.bit(y, j) = 1)
             {
-                sum = sum + shiftedX;
+                let sum = sum + shiftedX;
             }
-            shiftedX = shiftedX + shiftedX;
-            j = j - 1;
+            let shiftedX = shiftedX + shiftedX;
+            let j = j + 1;
         }
+
         return sum;
     }
 
@@ -79,13 +87,13 @@ class Math {
     function int divide(int x, int y) {
         var int q, s, z, w;
 
-        let z = abs(x);
-        let w = abs(y);
+        let z = Math.abs(x);
+        let w = Math.abs(y);
 
         if ((w > z) | (w < 0)) { return 0; }
 
-        let q = divide(2, 2 * w);
-        let s = sign(x) * sign(y);
+        let q = Math.divide(2, 2 * w);
+        let s = Math.sign(x) * Math.sign(y);
 
         if ((z - (2 * q * w)) < w)
         {
@@ -115,18 +123,18 @@ class Math {
         var int y;
         var int yplus, yplus_sq;
 
-        j = (16 / 2) - 1;
-        y = 0;
+        let j = (16 / 2) - 1;
+        let y = 0;
 
         while (j > 0)
         {
-            yplus = y + twoToThe[j];
-            yplus_sq = yplus * yplus;
+            let yplus = y + twoToThe[j];
+            let yplus_sq = yplus * yplus;
             if ((~(yplus_sq > x)) & (yplus_sq > 0))
             {
-                y = yplus;
+                let y = yplus;
             }
-            j = j - 1;
+            let j = j - 1;
         }
         return y;
     }
