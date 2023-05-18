@@ -23,6 +23,7 @@ class Output {
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
         do moveCursor(0, 0);
+        do initMap();
     }
 
     // Initializes the character map array
