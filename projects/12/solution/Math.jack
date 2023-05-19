@@ -40,12 +40,12 @@ class Math {
 
     function int twoToThe(int j)
     {
-        if (j < 15)
+        if (j < 16)
         {
             return twoToThe[j];
         }
 
-        do Sys.error(1);
+        do Sys.error(420);
         return 0;
     }
 
