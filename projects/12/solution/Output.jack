@@ -18,12 +18,17 @@ class Output {
 
     // Character map for displaying characters
     static Array charMaps; 
-    static int line, column;
+    static int line, column, maxLine, maxColumn;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
-        do moveCursor(0, 0);
-        do initMap();
+        do Output.moveCursor(0, 0);
+        do Output.initMap();
+
+        let maxLine = 23;
+        let maxColumn = 64;
+
+        return;
     }
 
     // Initializes the character map array
@@ -181,6 +186,13 @@ class Output {
     function void moveCursor(int i, int j) {
         let line = i;
         let column = j;
+
+        if (~(line < maxLine) | (line < 0) | ~(column < maxColumn) | (column < 0))
+        {
+            let line = 0;
+            let column = 0;
+        }
+
         return;
     }
 
@@ -190,7 +202,7 @@ class Output {
         var Array map;
         var int i, j;
 
-        let map = getMap(c);
+        let map = Output.getMap(c);
         let i = 0;
         while (i < 11)
         {
@@ -198,14 +210,14 @@ class Output {
             while (j < 8)
             {
                 do Screen.setColor(Math.bit(map[i], j));
-                do Screen.drawPixel(line * 8 + i, column * 8 + j);
+                do Screen.drawPixel(column * 8 + j, line * 11 + i);
 
                 let j = j + 1;
             }
             let i = i + 1;
         }
-
-        let column = column + 1;
+        
+        do Output.moveCursor(line, column + 1);
         return;
     }
 
@@ -213,9 +225,9 @@ class Output {
      *  and advances the cursor appropriately. */
     function void printString(String s) {
         var int i;
-        while (i < s.length)
+        while (i < s.length())
         {
-            do printChar(s.charAt(i));
+            do Output.printChar(s.charAt(i));
             let i = i + 1;
         }
         return;
@@ -225,20 +237,21 @@ class Output {
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
         var String str;
+        let str = String.new(32);
         do str.setInt(i);
-        do printString(str);
+        do Output.printString(str);
         return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
-        do moveCursor(line + 1, 0);
+        do Output.moveCursor(line + 1, 0);
         return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
-        do moveCursor(line, column - 1);
+        do Output.moveCursor(line, column - 1);
         return;
     }
 }
