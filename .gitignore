@@ -7,6 +7,7 @@ projects/07/**/*.asm
 projects/08/**/*.asm
 projects/10/**/bin/*
 projects/11/**/*.vm
+projects/12/**/*.vm
 
 
 __pycache__
