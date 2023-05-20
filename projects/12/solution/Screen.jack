@@ -10,28 +10,25 @@
  */
 class Screen {
     static boolean color;
+    static int base, end;
 
     /** Initializes the Screen. */
     function void init() {
         do Screen.setColor(true);
+        let base = 16384;
+        let end = 24576;
         return;
     }
 
     /** Erases the entire screen. */
     function void clearScreen() {
-        var int i, j;
-        do Screen.setColor(false);
+        var int addr;
+        let addr = base;
 
-        let i = 0;
-        while (i < 512)
+        while (addr < end)
         {
-            let j = 0;
-            while (j < 256)
-            {
-                do Screen.drawPixel(i, j);
-                let j = j + 1;
-            }
-            let i = i + 1;
+            do Memory.poke(addr, 0);
+            let addr = addr + 1;
         }
 
         return;
@@ -49,7 +46,7 @@ class Screen {
         var int addr, value, xmod16;
         var boolean xmod16bit;
 
-        let addr = 16384 + (32 * y) + (x / 16);
+        let addr = base + (32 * y) + (x / 16);
         let value = Memory.peek(addr);
 
         let xmod16 = x - ((x / 16) * 16);
@@ -78,10 +75,32 @@ class Screen {
 
     function void drawHorizontalLine(int x1, int x2, int y)
     {
-        var int x;
+        var int x, xmax, xdiv16, xmod16, addr;
         let x = Math.min(x1, x2);
+        let xmax = Math.max(x1, x2);
 
-        while (x < Math.max(x1, x2))
+        // Fill first block.
+        let xdiv16 = x / 16;            // The block.
+        let xmod16 = x - (xdiv16 * 16); // The entry within the block.
+
+        while ((xmod16 > 0) & (xmod16 < 16))
+        {
+            do Screen.drawPixel(x, y);
+            let x = x + 1;
+            let xmod16 = xmod16 + 1;
+        }
+
+        // Fill the middle in as fast as possible.
+        let addr = base + (32 * y) + (x / 16);
+        while ((x + 16) < xmax)
+        {
+            do Memory.poke(addr, color);
+            let x = x + 16;
+            let addr = addr + 1;
+        }
+
+        // Fill last block.
+        while (~(x > xmax))
         {
             do Screen.drawPixel(x, y);
             let x = x + 1;
@@ -198,7 +217,7 @@ class Screen {
 
         while (y1 + z < y2)
         {
-            do Screen.drawLine(x1, y1 + z, x2, y1 + z);
+            do Screen.drawHorizontalLine(x1, x2, y1 + z);
             let z = z + 1;
         }
 
